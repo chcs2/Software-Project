@@ -76,7 +76,6 @@ class UserService:
         if result.scalars().first():
             raise HTTPException(status_code=400, detail="Este email já existe.")
 
-        # AQUI usamos o serviço de autenticação de forma segura!
         hashed_pw = auth.auth_service.get_password_hash(user_data.password)
         new_user = models.User(name=user_data.name, email=user_data.email, password_hash=hashed_pw)
         
@@ -94,7 +93,6 @@ class UserService:
         if user_update.name: db_user.name = user_update.name
         if user_update.email: db_user.email = user_update.email
         if user_update.password:
-            # Corrigido o bug do código antigo aqui!
             db_user.password_hash = auth.auth_service.get_password_hash(user_update.password)
             
         await db.commit()
@@ -105,9 +103,7 @@ class UserService:
 user_service = UserService()
 
 
-
 # ROTAS (Os "Carteiros")
-
 
 @router.get("/me", response_model=schemas.UserResponse)
 async def read_user_me(db: AsyncSession = Depends(get_db), current_user: str = Depends(auth.get_current_user)):
@@ -134,9 +130,60 @@ async def read_users(db: AsyncSession = Depends(get_db), current_user: str = Dep
 async def read_user(user_id: int, db: AsyncSession = Depends(get_db), current_user: str = Depends(auth.get_current_user)):
     result = await db.execute(select(models.User).where(models.User.id == user_id))
     user = result.scalars().first()
+    
     if user is None:
         raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
-    return user
+        
+    count_result = await db.execute(
+        select(func.count(models.Progress.id)).where(models.Progress.user_id == user.id)
+    )
+    total_learned = count_result.scalar() or 0
+
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "is_active": user.is_active,
+        "created_at": user.created_at,
+        "weekly_goal": user.weekly_goal,
+        "goal_set_at": user.goal_set_at,
+        "total_learned": total_learned 
+    }
+
+# ROTA ATUALIZADA: Agora envia as estatísticas globais E semanais!
+@router.get("/{user_id}/stats")
+async def get_user_stats(user_id: int, db: AsyncSession = Depends(get_db), current_user: str = Depends(auth.get_current_user)):
+    result = await db.execute(select(models.User).where(models.User.id == user_id))
+    user = result.scalars().first()
+    
+    if user is None:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
+        
+    # 1. Contagem GLOBAL
+    count_result = await db.execute(
+        select(func.count(models.Progress.id)).where(models.Progress.user_id == user.id)
+    )
+    total_learned = count_result.scalar() or 0
+
+    # 2. Descobrir o início da semana (Domingo)
+    hoje = datetime.now(timezone.utc)
+    dias_desde_domingo = (hoje.weekday() + 1) % 7 
+    inicio_semana = hoje - timedelta(days=dias_desde_domingo)
+    inicio_semana = inicio_semana.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # 3. Contagem SEMANAL
+    weekly_count_result = await db.execute(
+        select(func.count(models.Progress.id)).where(
+            models.Progress.user_id == user.id,
+            models.Progress.learned_at >= inicio_semana
+        )
+    )
+    weekly_learned = weekly_count_result.scalar() or 0
+
+    return {
+        "total_learned": total_learned,
+        "weekly_learned": weekly_learned
+    }
 
 @router.put("/{user_id}", response_model=schemas.UserResponse)
 async def update_user(user_id: int, user_update: schemas.UserUpdate, db: AsyncSession = Depends(get_db)):
