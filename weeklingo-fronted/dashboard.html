@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>WeekLingo - O Meu Painel</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* === VARIÁVEIS DE TEMA === */
+        :root {
+            --bg-color: #f4f4f9;
+            --container-bg: #ffffff;
+            --text-main: #2c3e50;
+            --text-muted: #7f8c8d;
+            --border-color: #eeeeee;
+            
+            --cor-tutor: #1abc9c;
+            --cor-erros: #e67e22;
+            --cor-glossario: #2ecc71;
+            --cor-quiz: #9b59b6;
+            --cor-sair: #e74c3c;
+            --cor-meta: #3498db;
+            --cor-conquista: #f1c40f;
+            
+            --radius-box: 12px;
+            --radius-btn: 6px;
+            
+            --font-texto: 'Inter', sans-serif;
+            --font-titulos: 'Montserrat', sans-serif;
+        }
+
+        /* === ESTILOS GERAIS === */
+        body { 
+            font-family: var(--font-texto); 
+            background-color: var(--bg-color); 
+            margin: 0; 
+            padding: 20px; 
+            text-align: center; 
+            color: var(--text-main); 
+        }
+        
+        h1, h2, h3, h4 {
+            font-family: var(--font-titulos);
+        }
+
+        .container { background: var(--container-bg); padding: 20px; border-radius: var(--radius-box); max-width: 750px; margin: 0 auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        /* === CABEÇALHO E NAVEGAÇÃO === */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px; }
+        .nav-buttons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+        .btn-nav { font-family: var(--font-texto); padding: 10px 18px; border-radius: var(--radius-btn); text-decoration: none; font-weight: 600; color: white; border: none; cursor: pointer; font-size: 14px; transition: all 0.3s ease; }
+        
+        .btn-tutor { background-color: var(--cor-tutor); }
+        .btn-erros { background-color: var(--cor-erros); }
+        .btn-glossario { background-color: var(--cor-glossario); }
+        .btn-quiz { background-color: var(--cor-quiz); }
+        .btn-sair { background-color: var(--cor-sair); }
+        
+        .btn-nav:hover:not(:disabled) { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .btn-nav:disabled { background-color: #bdc3c7; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        /* === COMUNIDADE E CARDS === */
+        /* Passo 3: Micro-interações. Adicionado transition e hover a todos os cards */
+        .comunidade-section { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .com-card { background: #f9f9fb; border: 1px solid #e0e0e0; border-radius: 10px; padding: 12px; text-align: left; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .com-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
+        
+        .com-card h4 { margin: 0 0 10px 0; color: var(--text-main); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .friend-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px; border-radius: var(--radius-btn); margin-bottom: 5px; border: 1px solid var(--border-color); font-size: 13px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .friend-item:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+        
+        .btn-mini { padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; font-size: 11px; font-weight: bold; color: white; transition: 0.2s; }
+        .btn-mini:hover { opacity: 0.8; }
+        .input-convite { width: calc(100% - 70px); padding: 6px; border-radius: 4px; border: 1px solid #ddd; font-size: 12px; font-family: var(--font-texto); }
+        .amigo-clicavel { cursor: pointer; color: var(--cor-meta); font-weight: 600; text-decoration: underline; transition: color 0.2s; }
+        .amigo-clicavel:hover { color: #2980b9; }
+
+        /* === METAS E PROGRESSO === */
+        .meta-semanal-container, .conquistas-container { background: var(--container-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 2px solid var(--cor-meta); text-align: left; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .meta-semanal-container:hover, .conquistas-container:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.05); }
+        .conquistas-container { border-color: var(--cor-conquista); background: #fffcf5; }
+        .nivel-destaque { font-size: 24px; font-family: var(--font-titulos); color: #d35400; margin: 10px 0; }
+        #countdown { font-weight: 600; color: var(--cor-erros); font-size: 12px; }
+        
+        .progresso-fundo { background: #e0e0e0; border-radius: 10px; height: 18px; width: 100%; overflow: hidden; }
+        .barra { height: 100%; width: 0%; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: bold; }
+        .barra-semanal { background: var(--cor-meta); }
+        .barra-conquista { background: var(--cor-conquista); }
+
+        /* === LISTA DE PALAVRAS === */
+        .word-card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; background: white; transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; }
+        .word-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.08); border-color: #ccc; }
+        .badge-aprendida { background-color: var(--cor-glossario); color: white; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .badge-pendente { background-color: var(--cor-erros); color: white; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+
+        /* === MODAIS === */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 350px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .modal-amigo-content { max-width: 500px; width: 90%; }
+        .fechar-modal { position: absolute; top: 15px; right: 20px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+        .fechar-modal:hover { color: var(--cor-sair); }
+        
+        .comparacao-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .card-comparacao { background: var(--bg-color); padding: 15px; border-radius: 8px; border: 1px solid #ddd; text-align: left; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .card-comparacao:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
+        .card-comparacao h4 { margin-top: 0; color: var(--text-main); border-bottom: 2px solid var(--cor-glossario); padding-bottom: 5px; text-align: center;}
+        .card-comparacao.amigo h4 { border-bottom: 2px solid var(--cor-meta); }
+        .stat-linha { display: flex; justify-content: space-between; margin: 10px 0; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div id="modal-parabens" class="modal-overlay" onclick="if(event.target===this) UIManager.fecharModais()">
+        <div class="modal-content">
+            <h2 id="titulo-modal">🎉 Parabéns! 🎉</h2>
+            <p id="texto-parabens">Objetivo alcançado!</p>
+            <button class="btn-nav btn-quiz" style="width: 100%; margin-top: 10px;" onclick="UIManager.fecharModais()">Continuar</button>
+        </div>
+    </div>
+
+    <div id="modal-perfil-amigo" class="modal-overlay" onclick="if(event.target===this) UIManager.fecharModais()">
+        <div class="modal-content modal-amigo-content">
+            <span class="fechar-modal" onclick="UIManager.fecharModais()">&times;</span>
+            <h2 style="margin-top: 0; font-size: 20px;">Ranking <span id="meu-nome-titulo" style="color: var(--cor-glossario);">Você</span> <span style="color: var(--cor-sair); font-weight: bold;">X</span> <span id="nome-amigo-titulo" style="color: var(--cor-meta);">Amigo</span></h2>
+            
+            <div class="comparacao-grid">
+                <div class="card-comparacao">
+                    <h4>Tu</h4>
+                    <div class="stat-linha"><span>Semanal:</span> <strong id="comp-minha-semanal">0</strong></div>
+                    <div class="stat-linha"><span>Global:</span> <strong id="comp-minha-global">0</strong></div>
+                </div>
+
+                <div class="card-comparacao amigo">
+                    <h4 id="nome-amigo-coluna">Amigo</h4>
+                    <div class="stat-linha"><span>Semanal:</span> <strong id="comp-amigo-semanal">0</strong></div>
+                    <div class="stat-linha"><span>Global:</span> <strong id="comp-amigo-global">0</strong></div>
+                </div>
+            </div>
+            <p id="mensagem-comparacao" style="margin-top: 20px; font-weight: 600; color: var(--text-muted); font-size: 14px;"></p>
+        </div>
+    </div>
+
+    <main class="container">
+        <header>
+            <h2 id="titulo-boas-vindas">📚 WeekLingo</h2>
+            <nav class="nav-buttons">
+                <a href="tutor.html" class="btn-nav btn-tutor">🤖 Tutor IA</a>
+                <a href="revisao.html" class="btn-nav btn-erros">📕 Erros</a>
+                <a href="glossario.html" id="btn-glossario" class="btn-nav btn-glossario">📖 Glossário</a>
+                <a href="quiz.html" id="btn-quiz" class="btn-nav btn-quiz">🎮 Quiz</a>
+                <button class="btn-nav btn-sair" onclick="App.fazerLogout()">Sair</button>
+            </nav>
+        </header>
+
+        <section class="conquistas-container">
+            <h3 style="margin: 0; color: var(--cor-conquista); font-size: 16px;">🏆 Conquistas</h3>
+            <div class="nivel-destaque" id="nivel-atual">...</div>
+            <div id="texto-proximo-nivel" style="font-size: 13px; font-weight: 500; margin-bottom: 5px;"></div>
+            <div class="progresso-fundo"><div id="barra-conquista" class="barra barra-conquista"></div></div>
+        </section>
+
+        <section class="comunidade-section">
+            <div class="com-card">
+                <h4>📩 Pedidos</h4>
+                <div id="lista-pedidos"></div>
+                <div style="margin-top: 10px; display: flex; gap: 5px;">
+                    <input type="email" id="email-convite" class="input-convite" placeholder="Email do amigo...">
+                    <button onclick="App.enviarPedidoAmizade()" class="btn-mini btn-glossario">+</button>
+                </div>
+            </div>
+            <div class="com-card">
+                <h4>👥 Amigos</h4>
+                <div id="lista-amigos"></div>
+            </div>
+        </section>
+
+        <section class="meta-semanal-container">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; color: var(--cor-meta); font-size: 16px;">🎯 Meta Semanal</h3>
+                <div id="countdown"></div>
+            </div>
+            <div style="margin: 10px 0;">
+                <input type="number" id="input-meta" style="width: 50px; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-family: var(--font-texto);">
+                <button id="btn-salvar-meta" class="btn-mini btn-quiz" onclick="App.salvarMeta()" style="padding: 6px 10px;">Definir</button>
+            </div>
+            <div class="progresso-fundo"><div id="barra-semanal" class="barra barra-semanal">0%</div></div>
+            <p id="texto-meta-semanal" style="font-size: 12px; font-weight: 500; color: var(--text-muted); margin-top: 8px;"></p>
+        </section>
+
+        <section id="lista-palavras"></section>
+    </main>
+
+    <script>
+        // ==========================================
+        // 1. CONFIGURAÇÕES E ESTADO GLOBAL
+        // ==========================================
+        const CONFIG = {
+            API_URL: "http://127.0.0.1:8000",
+            TOKEN: localStorage.getItem('token')
+        };
+
+        if (!CONFIG.TOKEN) window.location.href = 'login.html';
+
+        const STATE = {
+            meusAcertosSemanais: 0,
+            meusAcertosGlobais: 0,
+            meuNome: "Você",
+            niveis: [
+                { meta: 0, titulo: "Nível 1 - Iniciante 🌱" },
+                { meta: 15, titulo: "Nível 2 - Curioso 👀" },
+                { meta: 50, titulo: "Nível 3 - Explorador 🧭" },
+                { meta: 200, titulo: "Nível 4 - Dedicado 🎒" },
+                { meta: 500, titulo: "Nível 5 - Ambicioso 🚀" }
+            ]
+        };
+
+        // ==========================================
+        // 2. SERVIÇO DE API (O "Carteiro")
+        // ==========================================
+        const ApiService = {
+            getHeaders() {
+                return { 'Authorization': `Bearer ${CONFIG.TOKEN}`, 'Content-Type': 'application/json' };
+            },
+
+            async fetchDashboardData() {
+                const reqs = [
+                    fetch(`${CONFIG.API_URL}/words/`, { headers: this.getHeaders() }),
+                    fetch(`${CONFIG.API_URL}/progress/me`, { headers: this.getHeaders() }),
+                    fetch(`${CONFIG.API_URL}/users/me`, { headers: this.getHeaders() }),
+                    fetch(`${CONFIG.API_URL}/friends/pending`, { headers: this.getHeaders() }),
+                    fetch(`${CONFIG.API_URL}/friends/list`, { headers: this.getHeaders() })
+                ];
+                const responses = await Promise.all(reqs);
+                return Promise.all(responses.map(res => res.json()));
+            },
+
+            async enviarPedido(email) {
+                return fetch(`${CONFIG.API_URL}/friends/request`, {
+                    method: 'POST',
+                    headers: this.getHeaders(),
+                    body: JSON.stringify({ email })
+                });
+            },
+
+            async responderPedido(id, acao) {
+                const method = acao === 'accept' ? 'POST' : 'DELETE';
+                return fetch(`${CONFIG.API_URL}/friends/${acao}/${id}`, { 
+                    method, 
+                    headers: this.getHeaders() 
+                });
+            },
+
+            async salvarMeta(goal) {
+                return fetch(`${CONFIG.API_URL}/users/me/goal?goal=${goal}`, { 
+                    method: 'POST', 
+                    headers: this.getHeaders() 
+                });
+            },
+
+            async buscarStatsAmigo(amigoId) {
+                return fetch(`${CONFIG.API_URL}/users/${amigoId}/stats`, { 
+                    headers: this.getHeaders() 
+                });
+            }
+        };
+
+        // ==========================================
+        // 3. GESTOR DE INTERFACE (O "Pintor")
+        // ==========================================
+        const UIManager = {
+            atualizarBoasVindas(nome) {
+                if (nome) {
+                    document.getElementById('titulo-boas-vindas').innerText = `Olá, ${nome}!`;
+                    STATE.meuNome = nome;
+                }
+            },
+
+            desenharListaPalavras(totais, aprendidas) {
+                const btnQuiz = document.getElementById('btn-quiz');
+                const btnGlossario = document.getElementById('btn-glossario');
+                btnQuiz.disabled = btnGlossario.disabled = (totais.length === 0);
+
+                const ids = aprendidas.map(p => p.word_id);
+                const div = document.getElementById('lista-palavras');
+                div.innerHTML = '<h3 style="text-align:left; color: var(--cor-meta); font-size: 16px;">Palavras para Praticar</h3>';
+                
+                totais.slice(0, 5).forEach(p => {
+                    const ok = ids.includes(p.id);
+                    div.innerHTML += `
+                        <div class="word-card">
+                            <div style="text-align:left; font-size: 15px;"><strong>${p.english_word}</strong></div>
+                            <span class="${ok ? 'badge-aprendida' : 'badge-pendente'}">${ok ? 'Aprendida' : 'Pendente'}</span>
+                        </div>`;
+                });
+            },
+
+            atualizarMetaSemanal(aprendidas, user) {
+                const agora = new Date();
+                const inicio = new Date(); inicio.setDate(agora.getDate() - agora.getDay()); inicio.setHours(0,0,0,0);
+                
+                const count = aprendidas.filter(p => new Date(p.learned_at) >= inicio).length;
+                const meta = user.weekly_goal || 10;
+                const perc = Math.min(Math.round((count / meta) * 100), 100);
+
+                STATE.meusAcertosSemanais = count;
+                STATE.meusAcertosGlobais = aprendidas.length;
+
+                document.getElementById('barra-semanal').style.width = `${perc}%`;
+                document.getElementById('barra-semanal').innerText = `${perc}%`;
+                document.getElementById('texto-meta-semanal').innerText = `${count} / ${meta} aprendidas esta semana`;
+                document.getElementById('input-meta').value = meta;
+
+                // Bloqueio visual do botão se a meta já foi definida na semana
+                if (user.goal_set_at) {
+                    const dataDefinida = new Date(user.goal_set_at);
+                    if (dataDefinida >= inicio) {
+                        const input = document.getElementById('input-meta');
+                        const btn = document.getElementById('btn-salvar-meta');
+                        input.disabled = btn.disabled = true;
+                        btn.innerText = "🔒 Fixa";
+                        btn.style.backgroundColor = "#bdc3c7";
+                        btn.style.cursor = "not-allowed";
+                    }
+                }
+
+                if (perc >= 100 && !sessionStorage.getItem('festa_meta')) {
+                    this.dispararFesta("Incrível! Bateste a tua meta semanal! 🚀");
+                    sessionStorage.setItem('festa_meta', 'true');
+                }
+            },
+
+            atualizarNiveis(total) {
+                let atual = STATE.niveis[0], prox = STATE.niveis[1];
+                for (let i = 0; i < STATE.niveis.length; i++) {
+                    if (total >= STATE.niveis[i].meta) { 
+                        atual = STATE.niveis[i]; 
+                        prox = STATE.niveis[i + 1] || null; 
+                    }
+                }
+                
+                document.getElementById('nivel-atual').innerText = atual.titulo;
+                if (prox) {
+                    const perc = Math.round(((total - atual.meta) / (prox.meta - atual.meta)) * 100);
+                    document.getElementById('barra-conquista').style.width = `${perc}%`;
+                    document.getElementById('texto-proximo-nivel').innerText = `Faltam ${prox.meta - total} palavras para o nível seguinte`;
+                }
+            },
+
+            desenharAmigos(pedidos, amigos) {
+                const pDiv = document.getElementById('lista-pedidos');
+                pDiv.innerHTML = pedidos.map(p => `
+                    <div class="friend-item">
+                        <span>${p.requester_name}</span>
+                        <div>
+                            <button onclick="App.acaoPedido(${p.friendship_id}, 'accept')" class="btn-mini btn-glossario">✓</button>
+                            <button onclick="App.acaoPedido(${p.friendship_id}, 'decline')" class="btn-mini btn-sair">×</button>
+                        </div>
+                    </div>`).join('') || '<small style="color: var(--text-muted);">Sem pedidos.</small>';
+
+                const aDiv = document.getElementById('lista-amigos');
+                aDiv.innerHTML = amigos.map(a => `
+                    <div class="friend-item">
+                        <span class="amigo-clicavel" onclick="App.abrirPerfilAmigo(${a.id || a.friend_id}, '${a.name}')">${a.name}</span>
+                        <button onclick="App.acaoPedido(${a.friendship_id}, 'decline')" class="btn-mini btn-sair">Remover</button>
+                    </div>`).join('') || '<small style="color: var(--text-muted);">Sem amigos.</small>';
+            },
+
+            abrirModalAmigoResumo(nome) {
+                document.getElementById('nome-amigo-titulo').innerText = nome;
+                document.getElementById('meu-nome-titulo').innerText = STATE.meuNome;
+                document.getElementById('nome-amigo-coluna').innerText = nome;
+                document.getElementById('comp-minha-semanal').innerText = STATE.meusAcertosSemanais;
+                document.getElementById('comp-minha-global').innerText = STATE.meusAcertosGlobais;
+                document.getElementById('comp-amigo-semanal').innerText = "...";
+                document.getElementById('comp-amigo-global').innerText = "...";
+                document.getElementById('mensagem-comparacao').innerText = "A carregar dados...";
+                document.getElementById('modal-perfil-amigo').style.display = "flex";
+            },
+
+            atualizarStatsAmigo(nome, amigoGlobal, amigoSemanal) {
+                document.getElementById('comp-amigo-semanal').innerText = amigoSemanal;
+                document.getElementById('comp-amigo-global').innerText = amigoGlobal;
+
+                let msg = "🤝 Estão empatados no conhecimento global!";
+                if (STATE.meusAcertosGlobais > amigoGlobal) msg = `🏆 Estás à frente do(a) ${nome} no ranking global!`;
+                else if (STATE.meusAcertosGlobais < amigoGlobal) msg = `🏃‍♂️ O(A) ${nome} está à frente! Hora de treinar!`;
+                
+                document.getElementById('mensagem-comparacao').innerText = msg;
+            },
+
+            dispararFesta(msg) {
+                document.getElementById('texto-parabens').innerText = msg;
+                document.getElementById('modal-parabens').style.display = 'flex';
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            },
+
+            fecharModais() {
+                document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+            },
+
+            iniciarRelogio() {
+                setInterval(() => {
+                    const agora = new Date();
+                    const dom = new Date(); dom.setDate(agora.getDate() + (7 - agora.getDay()) % 7); dom.setHours(23,59,59);
+                    const diff = dom - agora;
+                    const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+                    document.getElementById('countdown').innerText = `Reset em: ${h}h ${m}m ${s}s`;
+                }, 1000);
+            }
+        };
+
+        // ==========================================
+        // 4. CONTROLADOR PRINCIPAL (A "Rececionista")
+        // ==========================================
+        const App = {
+            async iniciar() {
+                UIManager.iniciarRelogio();
+                await this.carregarDados();
+            },
+
+            async carregarDados() {
+                try {
+                    const [totais, aprendidas, user, pedidos, amigos] = await ApiService.fetchDashboardData();
+                    UIManager.atualizarBoasVindas(user.name);
+                    UIManager.atualizarMetaSemanal(aprendidas, user);
+                    UIManager.atualizarNiveis(aprendidas.length);
+                    UIManager.desenharListaPalavras(totais, aprendidas);
+                    UIManager.desenharAmigos(pedidos, amigos);
+                } catch (err) {
+                    console.error("Erro ao carregar painel:", err);
+                }
+            },
+
+            async enviarPedidoAmizade() {
+                const emailInput = document.getElementById('email-convite');
+                const email = emailInput.value.trim();
+                
+                if (!email) return alert("Por favor, digita o email do amigo.");
+
+                try {
+                    const res = await ApiService.enviarPedido(email);
+                    if (res.ok) {
+                        alert("Solicitação de amizade enviada com sucesso!");
+                        emailInput.value = "";
+                    } else {
+                        const json = await res.json();
+                        alert(json.detail || "Erro ao enviar pedido.");
+                    }
+                } catch (erro) {
+                    alert("Falha de comunicação com o servidor.");
+                }
+                this.carregarDados();
+            },
+
+            async acaoPedido(id, acao) {
+                await ApiService.responderPedido(id, acao);
+                this.carregarDados();
+            },
+
+            async salvarMeta() {
+                const val = document.getElementById('input-meta').value;
+                const res = await ApiService.salvarMeta(val);
+                if (res.ok) {
+                    alert("Meta salva com sucesso!");
+                    this.carregarDados();
+                } else {
+                    const data = await res.json();
+                    alert(data.detail || "Erro ao salvar a meta.");
+                }
+            },
+
+            async abrirPerfilAmigo(amigoId, amigoNome) {
+                UIManager.abrirModalAmigoResumo(amigoNome);
+                try {
+                    const res = await ApiService.buscarStatsAmigo(amigoId);
+                    if (res.ok) {
+                        const dados = await res.json();
+                        UIManager.atualizarStatsAmigo(amigoNome, dados.total_learned || 0, dados.weekly_learned || 0);
+                    } else {
+                        document.getElementById('mensagem-comparacao').innerText = "Não foi possível carregar os dados deste amigo.";
+                    }
+                } catch (error) {
+                    document.getElementById('mensagem-comparacao').innerText = "Erro ao conectar ao servidor.";
+                }
+            },
+
+            fazerLogout() {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            }
+        };
+
+        // Arrancar com a aplicação
+        window.onload = () => App.iniciar();
+    </script>
+</body>
+</html>

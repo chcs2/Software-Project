@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeekLingo - Criar Conta</title>
+    <style>
+        :root {
+            --cor-primaria: #3498db;
+            --cor-sucesso: #27ae60;
+            --cor-erro: #e74c3c;
+            --cor-bg: #f4f4f9;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background-color: var(--cor-bg); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+
+        .register-box { 
+            background: white; 
+            padding: 40px; 
+            width: 320px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            text-align: center;
+        }
+
+        h2 { color: #2c3e50; margin-bottom: 25px; }
+        
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 10px 0; 
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            font-size: 14px;
+        }
+
+        input:focus { outline: none; border-color: var(--cor-primaria); }
+
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            cursor: pointer; 
+            background-color: var(--cor-primaria); 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            margin-top: 15px; 
+            transition: 0.3s;
+        }
+
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        #mensagem { margin-top: 15px; font-size: 14px; min-height: 20px; font-weight: bold; }
+
+        .link-login { 
+            display: block; 
+            margin-top: 25px; 
+            color: #666; 
+            text-decoration: none; 
+            font-size: 13px; 
+        }
+        .link-login:hover { text-decoration: underline; color: var(--cor-primaria); }
+    </style>
+</head>
+<body>
+
+    <div class="register-box">
+        <h2>Criar Nova Conta</h2>
+        <form id="register-form">
+            <input type="text" id="name" placeholder="O seu nome completo" required>
+            <input type="email" id="email" placeholder="O seu melhor email" required>
+            <input type="password" id="password" placeholder="Escolha uma senha" required>
+            <button type="submit" id="btn-registrar">Registrar</button>
+        </form>
+        
+        <p id="mensagem"></p>
+        
+        <a href="login.html" class="link-login">Já tem conta? Entrar aqui</a>
+    </div>
+
+    <script>
+        /**
+         * 1. CLASSE ESTÁTICA: CONFIGURAÇÕES
+         */
+        class Config {
+            static API_URL = "http://127.0.0.1:8000";
+        }
+
+        /**
+         * 2. HERANÇA: CLIENTE API
+         * Focado em pedidos JSON (diferente do login que era FormUrlEncoded)
+         */
+        class ApiClient {
+            async postJson(path, data) {
+                return fetch(`${Config.API_URL}${path}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+            }
+        }
+
+        /**
+         * 3. SERVIÇO DE REGISTO (ABSTRAÇÃO)
+         * Isola a lógica de negócio do servidor.
+         */
+        class RegistrationService extends ApiClient {
+            async registerUser(name, email, password) {
+                const response = await this.postJson('/users/', {
+                    name: name,
+                    email: email,
+                    password: password
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    // Lança o erro para ser capturado pelo controlador
+                    throw new Error(errorData.detail || "Falha no registo.");
+                }
+
+                return response.json();
+            }
+        }
+
+        /**
+         * 4. CONTROLADOR DA PÁGINA (ENCAPSULAMENTO)
+         * Faz a ponte entre o HTML e o Serviço.
+         */
+        class RegisterPage {
+            constructor() {
+                this.service = new RegistrationService();
+                
+                // Mapeamento de elementos (Encapsulamento de UI)
+                this.form = document.getElementById('register-form');
+                this.msgElement = document.getElementById('mensagem');
+                this.btnSubmit = document.getElementById('btn-registrar');
+
+                this.init();
+            }
+
+            init() {
+                // Evento de submissão moderno
+                this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+            }
+
+            showMessage(texto, cor) {
+                this.msgElement.innerText = texto;
+                this.msgElement.style.color = cor;
+            }
+
+            setLoading(state) {
+                this.btnSubmit.disabled = state;
+                this.btnSubmit.innerText = state ? "A processar..." : "Registrar";
+            }
+
+            async handleSubmit(event) {
+                event.preventDefault(); // Evita recarregar a página
+                
+                // Obter valores dos inputs no momento do clique
+                const name = document.getElementById('name').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+
+                // Validação Simples (Client-side)
+                if (!name || !email || !password) {
+                    this.showMessage("Preencha todos os campos!", "var(--cor-erro)");
+                    return;
+                }
+
+                this.setLoading(true);
+                this.showMessage("A criar conta...", "black");
+
+                try {
+                    await this.service.registerUser(name, email, password);
+                    
+                    // Sucesso
+                    this.showMessage("Conta criada com sucesso! Redirecionando...", "var(--cor-sucesso)");
+                    
+                    setTimeout(() => {
+                        window.location.href = "login.html";
+                    }, 2000);
+
+                } catch (erro) {
+                    // Erro de rede ou erro vindo do Backend (ex: email já existe)
+                    this.showMessage("Erro: " + erro.message, "var(--cor-erro)");
+                    this.setLoading(false);
+                }
+            }
+        }
+
+        // Instanciar e iniciar a página
+        const page = new RegisterPage();
+
+    </script>
+</body>
+</html>

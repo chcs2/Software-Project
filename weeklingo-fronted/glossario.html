@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeekLingo - O Meu Glossário</title>
+    <style>
+        :root {
+            --cor-primaria: #2ecc71; 
+            --cor-bg: #f4f4f9; 
+            --cor-texto: #2c3e50;
+            --cor-ouro: #f1c40f; 
+            --cor-perigo: #e74c3c; 
+            --radius: 8px;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background-color: var(--cor-bg); 
+            margin: 0; 
+            padding: 20px; 
+            text-align: center; 
+            color: var(--cor-texto); 
+        }
+
+        .container { 
+            background: white; 
+            padding: 25px; 
+            border-radius: var(--radius); 
+            max-width: 800px; 
+            margin: 0 auto; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            min-height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            border-bottom: 2px solid #eee; 
+            padding-bottom: 15px; 
+        }
+
+        h2 { color: var(--cor-primaria); margin: 0; }
+
+        /* COMPONENTE: BARRA DE PROGRESSO */
+        .conquistas-container { 
+            background: #fffcf5; 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin-bottom: 30px; 
+            border: 2px solid var(--cor-ouro); 
+            text-align: left; 
+        }
+
+        .progresso-fundo { 
+            background: #e0e0e0; 
+            border-radius: 10px; 
+            height: 22px; 
+            width: 100%; 
+            overflow: hidden; 
+            margin-top: 10px; 
+            border: 1px solid #ddd; 
+        }
+
+        .barra-conquista { 
+            height: 100%; 
+            width: 0%; 
+            background: var(--cor-ouro); 
+            transition: width 0.8s ease; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 12px; 
+            color: #000; 
+            font-weight: bold; 
+        }
+
+        /* PESQUISA */
+        .pesquisa-container { margin-bottom: 25px; }
+        #input-pesquisa { 
+            width: 100%; 
+            padding: 14px; 
+            font-size: 16px; 
+            border: 2px solid #ddd; 
+            border-radius: var(--radius); 
+            box-sizing: border-box; 
+        }
+        #input-pesquisa:focus { outline: none; border-color: var(--cor-primaria); }
+
+        /* GRID DE CARTÕES */
+        .grid-palavras { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            flex-grow: 1;
+        }
+
+        .word-card { 
+            border: 1px solid #ddd; 
+            padding: 18px; 
+            border-radius: var(--radius); 
+            background-color: #fafafa; 
+            text-align: left; 
+            transition: 0.3s; 
+            border-left: 6px solid var(--cor-primaria); 
+            height: fit-content;
+        }
+
+        .word-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
+        .word-info h3 { margin: 0 0 8px 0; font-size: 19px; }
+        .word-info p { margin: 6px 0; font-size: 15px; color: #555; }
+
+        .categoria-badge { 
+            background: #ececec; 
+            padding: 3px 10px; 
+            border-radius: 12px; 
+            font-size: 11px; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+        }
+
+        /* PAGINAÇÃO */
+        .controles-paginacao { 
+            margin-top: 30px; 
+            display: flex; 
+            justify-content: center; 
+            gap: 20px; 
+            align-items: center; 
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .btn-nav { 
+            background-color: #7f8c8d; 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: 6px; 
+            border: none; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: 0.2s; 
+        }
+
+        .btn-nav:hover:not(:disabled) { background-color: #636e72; }
+        .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .btn-voltar { 
+            background-color: #7f8c8d; 
+            color: white; 
+            padding: 10px 18px; 
+            border-radius: 6px; 
+            text-decoration: none; 
+            font-weight: bold; 
+            font-size: 14px; 
+        }
+
+        .estado-vazio { padding: 50px; color: #95a5a6; font-style: italic; grid-column: span 2; }
+
+        @media (max-width: 600px) { .grid-palavras { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h2>📖 O Meu Glossário</h2>
+            <a href="dashboard.html" class="btn-voltar">⬅ Voltar</a>
+        </div>
+        
+        <div class="conquistas-container">
+            <h3 style="margin: 0; color: #d35400;">🏆 Domínio do Dicionário</h3>
+            <div style="margin-top: 10px; font-size: 14px;">
+                Aprendidas: <strong id="texto-progresso">0 / 0</strong>
+            </div>
+            <div class="progresso-fundo">
+                <div id="barra-conquista" class="barra-conquista">0%</div>
+            </div>
+        </div>
+
+        <div class="pesquisa-container">
+            <input type="text" id="input-pesquisa" placeholder="🔍 Pesquisar em inglês ou português...">
+        </div>
+
+        <p id="mensagem-erro" style="color: var(--cor-perigo);"></p>
+        
+        <div id="lista-glossario" class="grid-palavras"></div>
+
+        <div id="paginacao-container" class="controles-paginacao"></div>
+    </div>
+
+    <script>
+        /**
+         * CLASSE ESTÁTICA: CONFIGURAÇÕES
+         */
+        class Config {
+            static API_URL = "http://127.0.0.1:8000";
+            static get TOKEN() { return localStorage.getItem('token'); }
+        }
+
+        /**
+         * CLASSE BASE: CLIENTE API (HERANÇA)
+         */
+        class ApiClient {
+            async fetchJson(path) {
+                const response = await fetch(`${Config.API_URL}${path}`, {
+                    headers: { 'Authorization': `Bearer ${Config.TOKEN}` }
+                });
+                if (response.status === 401) window.location.href = 'login.html';
+                if (!response.ok) throw new Error("Erro na API");
+                return response.json();
+            }
+        }
+
+        /**
+         * COMPONENTE: BARRA DE PROGRESSO (ENCAPSULAMENTO)
+         */
+        class ProgressBar {
+            constructor(barId, textId) {
+                this.bar = document.getElementById(barId);
+                this.text = document.getElementById(textId);
+            }
+
+            update(current, total) {
+                const percent = total > 0 ? Math.round((current / total) * 100) : 0;
+                this.bar.style.width = `${percent}%`;
+                this.bar.innerText = `${percent}%`;
+                this.text.innerText = `${current} / ${total}`;
+                if (percent >= 100) this.bar.style.backgroundColor = "#2ecc71";
+            }
+        }
+
+        /**
+         * CONTROLADOR PRINCIPAL: GLOSSARY APP
+         */
+        class GlossaryApp extends ApiClient {
+            constructor() {
+                super();
+                // Estado da Aplicação
+                this.allLearnedWords = [];
+                this.filteredWords = [];
+                this.currentPage = 1;
+                this.itemsPerPage = 10;
+                
+                this.uiProgress = new ProgressBar('barra-conquista', 'texto-progresso');
+                this.initEvents();
+            }
+
+            initEvents() {
+                document.getElementById('input-pesquisa').addEventListener('input', (e) => {
+                    this.currentPage = 1; // Volta para a pág 1 ao pesquisar
+                    this.applyFilter(e.target.value);
+                });
+            }
+
+            async start() {
+                if (!Config.TOKEN) return window.location.href = 'login.html';
+
+                try {
+                    const [allWords, myProgress, user] = await Promise.all([
+                        this.fetchJson('/words/'),
+                        this.fetchJson('/progress/me'),
+                        this.fetchJson('/users/me')
+                    ]);
+
+                    // Filtrar apenas as palavras que o utilizador já acertou
+                    const learnedIds = myProgress.map(p => p.word_id);
+                    this.allLearnedWords = allWords
+                        .filter(w => learnedIds.includes(w.id))
+                        .sort((a, b) => a.english_word.localeCompare(b.english_word));
+
+                    this.filteredWords = [...this.allLearnedWords];
+                    
+                    this.uiProgress.update(user.total_learned, allWords.length);
+                    this.render();
+
+                } catch (err) {
+                    document.getElementById('mensagem-erro').innerText = "Falha ao carregar dados.";
+                    console.error(err);
+                }
+            }
+
+            applyFilter(term) {
+                const t = term.toLowerCase();
+                this.filteredWords = this.allLearnedWords.filter(w => 
+                    w.english_word.toLowerCase().includes(t) || 
+                    w.portuguese_translation.toLowerCase().includes(t)
+                );
+                this.render();
+            }
+
+            render() {
+                const container = document.getElementById('lista-glossario');
+                container.innerHTML = '';
+
+                // Lógica de Paginação (Slice do Array)
+                const startIdx = (this.currentPage - 1) * this.itemsPerPage;
+                const endIdx = startIdx + this.itemsPerPage;
+                const pageItems = this.filteredWords.slice(startIdx, endIdx);
+
+                if (pageItems.length === 0) {
+                    container.innerHTML = `<div class="estado-vazio">Nenhuma palavra encontrada no glossário.</div>`;
+                    this.renderPaginationControls(0);
+                    return;
+                }
+
+                pageItems.forEach(word => {
+                    const card = document.createElement('div');
+                    card.className = 'word-card';
+                    card.innerHTML = `
+                        <div class="word-info">
+                            <h3>🇬🇧 ${word.english_word}</h3>
+                            <p>🇵🇹 <strong>${word.portuguese_translation}</strong></p>
+                            <span class="categoria-badge">${word.category || 'Geral'}</span>
+                        </div>`;
+                    container.appendChild(card);
+                });
+
+                this.renderPaginationControls(this.filteredWords.length);
+            }
+
+            renderPaginationControls(total) {
+                const container = document.getElementById('paginacao-container');
+                const totalPages = Math.ceil(total / this.itemsPerPage);
+                
+                container.innerHTML = `
+                    <button class="btn-nav" id="prev-page" ${this.currentPage === 1 ? 'disabled' : ''}>Anterior</button>
+                    <span>Página <strong>${this.currentPage}</strong> de ${totalPages || 1}</span>
+                    <button class="btn-nav" id="next-page" ${this.currentPage >= totalPages ? 'disabled' : ''}>Próxima</button>
+                `;
+
+                // Eventos dos botões
+                document.getElementById('prev-page').onclick = () => {
+                    this.currentPage--;
+                    this.render();
+                    window.scrollTo(0,0);
+                };
+
+                document.getElementById('next-page').onclick = () => {
+                    this.currentPage++;
+                    this.render();
+                    window.scrollTo(0,0);
+                };
+            }
+        }
+
+        // Execução
+        const app = new GlossaryApp();
+        app.start();
+
+    </script>
+</body>
+</html>

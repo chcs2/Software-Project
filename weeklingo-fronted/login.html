@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeekLingo - Login</title>
+    <style>
+        :root {
+            --cor-primaria: #4CAF50;
+            --cor-erro: #e74c3c;
+            --cor-bg: #f4f4f9;
+        }
+
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: var(--cor-bg); display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        
+        .login-box { 
+            background: white; 
+            padding: 40px; 
+            width: 320px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            text-align: center;
+        }
+
+        h2 { color: #2c3e50; margin-bottom: 25px; }
+        
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 10px 0; 
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            font-size: 14px;
+        }
+
+        input:focus { outline: none; border-color: var(--cor-primaria); }
+
+        .btn-entrar { 
+            width: 100%; 
+            padding: 12px; 
+            cursor: pointer; 
+            background-color: var(--cor-primaria); 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            margin-top: 15px; 
+            transition: 0.3s;
+        }
+
+        .btn-entrar:hover { background-color: #45a049; opacity: 0.9; }
+        .btn-entrar:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        #mensagem { margin-top: 15px; font-size: 14px; min-height: 20px; }
+
+        .link-registo { 
+            display: block; 
+            margin-top: 25px; 
+            color: #3498db; 
+            text-decoration: none; 
+            font-size: 13px; 
+            font-weight: bold; 
+        }
+        .link-registo:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <h2>WeekLingo</h2>
+        <form id="login-form">
+            <input type="email" id="email" placeholder="Seu Email" required>
+            <input type="password" id="password" placeholder="Sua Senha" required>
+            <button type="submit" class="btn-entrar" id="btn-submit">Entrar</button>
+        </form>
+        <p id="mensagem"></p>
+        <a href="registro.html" class="link-registo">Não tem conta? Registe-se aqui!</a>
+    </div>
+
+    <script>
+        /**
+         * 1. CONFIGURAÇÃO (Classe Estática)
+         * Centraliza constantes globais.
+         */
+        class Config {
+            static API_URL = "http://127.0.0.1:8000";
+        }
+
+        /**
+         * 2. HERANÇA: BASE DA API
+         * Classe genérica para chamadas de rede.
+         */
+        class ApiBase {
+            async postForm(path, data) {
+                // Converte objeto simples para URLSearchParams (OAuth2 padrão)
+                const formData = new URLSearchParams();
+                for (const key in data) formData.append(key, data[key]);
+
+                return fetch(`${Config.API_URL}${path}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+            }
+        }
+
+        /**
+         * 3. SERVIÇO DE AUTENTICAÇÃO
+         * Especializado em lidar com Login/Logout.
+         */
+        class AuthService extends ApiBase {
+            async login(email, password) {
+                // Abstração: a UI não precisa saber como o formulário é montado
+                const response = await this.postForm('/auth/login', {
+                    username: email,
+                    password: password
+                });
+
+                if (!response.ok) throw new Error("Credenciais inválidas");
+                
+                return response.json();
+            }
+
+            saveToken(token) {
+                localStorage.setItem('token', token);
+            }
+        }
+
+        /**
+         * 4. CONTROLADOR DA PÁGINA (ENCAPSULAMENTO)
+         * Gerencia os elementos do DOM e o fluxo de eventos.
+         */
+        class LoginPage {
+            constructor() {
+                this.authService = new AuthService();
+                
+                // Elementos encapsulados na instância
+                this.form = document.getElementById('login-form');
+                this.emailInput = document.getElementById('email');
+                this.passInput = document.getElementById('password');
+                this.msgElement = document.getElementById('mensagem');
+                this.btnSubmit = document.getElementById('btn-submit');
+
+                this.init();
+            }
+
+            init() {
+                // Verifica se já está logado
+                if (localStorage.getItem('token')) {
+                    window.location.href = 'dashboard.html';
+                }
+
+                // Vincula o evento de submissão
+                this.form.addEventListener('submit', (e) => this.handleLogin(e));
+            }
+
+            /**
+             * POLIMORFISMO/UI: Método para mostrar mensagens de forma padronizada
+             */
+            showMessage(texto, cor = "black") {
+                this.msgElement.innerText = texto;
+                this.msgElement.style.color = cor;
+            }
+
+            setLoading(loading) {
+                this.btnSubmit.disabled = loading;
+                this.btnSubmit.innerText = loading ? "A entrar..." : "Entrar";
+            }
+
+            async handleLogin(event) {
+                event.preventDefault(); // Impede o recarregamento da página
+                
+                this.setLoading(true);
+                this.showMessage("A ligar ao servidor...", "black");
+
+                try {
+                    const data = await this.authService.login(
+                        this.emailInput.value, 
+                        this.passInput.value
+                    );
+
+                    // Sucesso
+                    this.authService.saveToken(data.access_token);
+                    this.showMessage("Login efetuado! Redirecionando...", "green");
+                    
+                    setTimeout(() => {
+                        window.location.href = "dashboard.html";
+                    }, 1000);
+
+                } catch (erro) {
+                    // Erro (seja de credenciais ou de rede)
+                    this.showMessage(
+                        erro.message === "Failed to fetch" 
+                            ? "Servidor offline." 
+                            : "Email ou senha incorretos!", 
+                        "red"
+                    );
+                    this.setLoading(false);
+                }
+            }
+        }
+
+        // Inicialização da aplicação
+        const app = new LoginPage();
+    </script>
+</body>
+</html>

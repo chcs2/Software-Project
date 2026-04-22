@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutor de Conversação - WeekLingo</title>
+    <style>
+        :root {
+            --cor-ai: #ffffff;
+            --cor-user: #dcf8c6;
+            --cor-header: #25D366;
+            --cor-bg: #e5ddd5;
+            --cor-alerta: #fff3cd;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
+
+        /* CONTENTOR PRINCIPAL */
+        .chat-container { 
+            width: 100%; max-width: 600px; background: white; border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; 
+            height: 85vh; overflow: hidden;
+        }
+
+        /* CABEÇALHO */
+        .chat-header { 
+            background: var(--cor-header); color: white; padding: 15px 20px; 
+            font-size: 1.2em; font-weight: bold; display: flex; 
+            align-items: center; justify-content: space-between; 
+        }
+
+        .btn-back {
+            background-color: white; color: var(--cor-header); border: none;
+            padding: 8px 15px; border-radius: 20px; font-weight: bold;
+            cursor: pointer; font-size: 0.8em; transition: 0.2s;
+        }
+        .btn-back:hover { background-color: #e8f9ed; }
+
+        /* ÁREA DE MENSAGENS */
+        .chat-messages { 
+            flex: 1; padding: 20px; overflow-y: auto; display: flex; 
+            flex-direction: column; gap: 12px; background-color: var(--cor-bg);
+        }
+
+        .message { 
+            max-width: 80%; padding: 12px 16px; border-radius: 15px; 
+            line-height: 1.4; font-size: 0.95em; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .user-msg { align-self: flex-end; background: var(--cor-user); border-bottom-right-radius: 2px; }
+        .ai-msg { align-self: flex-start; background: var(--cor-ai); border-bottom-left-radius: 2px; }
+
+        /* CAIXA DE CORREÇÃO */
+        .correction-box { 
+            align-self: flex-start; background: var(--cor-alerta); 
+            border-left: 4px solid #ffc107; color: #856404;
+            border-radius: 4px; margin-top: -5px; font-size: 0.9em;
+        }
+
+        /* INPUT AREA */
+        .chat-input-area { display: flex; padding: 15px; background: #f0f0f0; gap: 10px; }
+        .chat-input-area input { 
+            flex: 1; padding: 12px 20px; border: none; 
+            border-radius: 25px; outline: none; font-size: 1em;
+        }
+        .chat-input-area button { 
+            background: var(--cor-header); color: white; border: none; 
+            padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold;
+        }
+        .chat-input-area button:hover { background: #1ebe5d; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <span>🤖 Tutor WeekLingo</span>
+        <button class="btn-back" id="btn-back">Sair</button>
+    </div>
+    
+    <div class="chat-messages" id="chat-messages">
+        <div class="message ai-msg">
+            Hello! I'm your tutor. Let's practice your English! How are you feeling today?
+        </div>
+    </div>
+    
+    <div class="chat-input-area">
+        <input type="text" id="user-input" placeholder="Type in English..." autocomplete="off">
+        <button id="btn-send">Send</button>
+    </div>
+</div>
+
+<script>
+    /**
+     * 1. CONFIGURAÇÃO (Constantes globais encapsuladas)
+     */
+    class Config {
+        static API_URL = "http://127.0.0.1:8000";
+    }
+
+    /**
+     * 2. SERVIÇO DE CHAT (HERANÇA E ABSTRAÇÃO)
+     * Lida exclusivamente com a comunicação com o servidor.
+     */
+    class ChatService {
+        async postMessage(text) {
+            const response = await fetch(`${Config.API_URL}/chat/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+
+            if (!response.ok) throw new Error("Falha na resposta do Tutor.");
+            return response.json();
+        }
+    }
+
+    /**
+     * 3. CONTROLADOR DA PÁGINA (ENCAPSULAMENTO)
+     * Gere a interface e o fluxo de mensagens.
+     */
+    class TutorPage {
+        constructor() {
+            this.service = new ChatService();
+            
+            // Elementos da UI
+            this.chatBox = document.getElementById('chat-messages');
+            this.input = document.getElementById('user-input');
+            this.btnSend = document.getElementById('btn-send');
+            this.btnBack = document.getElementById('btn-back');
+
+            this.init();
+        }
+
+        init() {
+            // Eventos
+            this.btnSend.onclick = () => this.handleSendMessage();
+            this.btnBack.onclick = () => window.location.href = 'dashboard.html';
+            this.input.onkeypress = (e) => { if (e.key === 'Enter') this.handleSendMessage(); };
+        }
+
+        /**
+         * POLIMORFISMO DE INTERFACE: Adiciona balões ao chat
+         */
+        addBalloon(text, sender, isCorrection = false) {
+            const msgDiv = document.createElement('div');
+            
+            if (isCorrection) {
+                msgDiv.className = 'message correction-box';
+                msgDiv.innerHTML = `<strong>💡 Tip:</strong> ${text}`;
+            } else {
+                msgDiv.className = `message ${sender === 'user' ? 'user-msg' : 'ai-msg'}`;
+                msgDiv.textContent = text;
+            }
+            
+            this.chatBox.appendChild(msgDiv);
+            this.chatBox.scrollTop = this.chatBox.scrollHeight; // Scroll automático
+        }
+
+        /**
+         * LÓGICA PRINCIPAL: Orquestra o envio e a recepção
+         */
+        async handleSendMessage() {
+            const text = this.input.value.trim();
+            if (!text) return;
+
+            // 1. UI: Mostra mensagem do utilizador e limpa campo
+            this.addBalloon(text, 'user');
+            this.input.value = '';
+            this.input.disabled = true; // Evita envio duplo enquanto a IA pensa
+
+            try {
+                // 2. SERVIÇO: Envia para o backend
+                const data = await this.service.postMessage(text);
+                
+                // 3. ABSTRAÇÃO: Processa a resposta (Splitting logic)
+                const fullReply = data.reply;
+                const parts = fullReply.split('[CORREÇÃO]');
+                
+                // Parte 0: A resposta conversacional
+                this.addBalloon(parts[0].trim(), 'ai');
+
+                // Parte 1: A correção (se existir)
+                if (parts.length > 1) {
+                    this.addBalloon(parts[1].trim(), 'ai', true);
+                }
+
+            } catch (error) {
+                this.addBalloon("Sorry, I'm having trouble connecting to my brain (server).", 'ai');
+                console.error(error);
+            } finally {
+                this.input.disabled = false;
+                this.input.focus();
+            }
+        }
+    }
+
+    // Inicializa a página
+    const tutor = new TutorPage();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeekLingo - Caderno de Erros</title>
+    <style>
+        :root {
+            --cor-erro: #e74c3c;
+            --cor-bg: #2c3e50;
+            --cor-texto: #333;
+            --radius: 12px;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background-color: var(--cor-bg); 
+            color: var(--cor-texto); 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container { 
+            background: white; 
+            padding: 40px; 
+            border-radius: var(--radius); 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+            max-width: 550px; 
+            width: 100%; 
+            text-align: center; 
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 { margin-top: 0; color: var(--cor-erro); font-size: 28px; }
+        p.subtitulo { color: #7f8c8d; margin-bottom: 30px; }
+        
+        /* LISTA DE ERROS */
+        .lista-erros { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+            text-align: left; 
+            flex-grow: 1;
+        }
+
+        .erro-item { 
+            background: #fdfdfd; 
+            border-left: 6px solid var(--cor-erro); 
+            padding: 18px; 
+            margin-bottom: 12px; 
+            border-radius: 8px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .erro-item:hover { transform: translateX(5px); }
+        .palavra-en { font-weight: bold; font-size: 19px; color: #2c3e50; }
+        .palavra-pt { color: #7f8c8d; font-size: 16px; font-weight: 500; }
+
+        /* ESTADOS E PAGINAÇÃO */
+        .mensagem-vazia { color: #27ae60; font-weight: bold; font-size: 18px; margin: 50px 0; }
+        
+        .paginacao { 
+            margin-top: 25px; 
+            display: flex; 
+            justify-content: center; 
+            gap: 15px; 
+            align-items: center;
+        }
+
+        .btn-nav {
+            background: #eee;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #555;
+        }
+        .btn-nav:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .btn-voltar { 
+            display: inline-block; 
+            margin-top: 30px; 
+            background: #34495e; 
+            color: white; 
+            text-decoration: none; 
+            padding: 12px 25px; 
+            border-radius: 8px; 
+            transition: 0.3s; 
+            font-weight: bold; 
+        }
+        .btn-voltar:hover { background: #1a252f; transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>📕 Caderno de Erros</h2>
+        <p class="subtitulo">Palavras que precisas de praticar um pouco mais.</p>
+
+        <ul class="lista-erros" id="lista-erros">
+            </ul>
+
+        <div id="controles-paginacao" class="paginacao"></div>
+
+        <a href="dashboard.html" class="btn-voltar">⬅ Voltar ao Painel</a>
+    </div>
+
+    <script>
+        /**
+         * 1. CONFIGURAÇÃO (Classe Estática)
+         */
+        class Config {
+            static API_URL = "http://127.0.0.1:8000";
+            static get TOKEN() { return localStorage.getItem('token'); }
+        }
+
+        /**
+         * 2. HERANÇA: CLIENTE API
+         */
+        class ApiClient {
+            async fetchMistakes() {
+                const res = await fetch(`${Config.API_URL}/mistakes/`, {
+                    headers: { 'Authorization': `Bearer ${Config.TOKEN}` }
+                });
+                if (res.status === 401) window.location.href = 'login.html';
+                if (!res.ok) throw new Error("Erro ao carregar dados");
+                return res.json();
+            }
+        }
+
+        /**
+         * 3. CONTROLADOR DA PÁGINA (ENCAPSULAMENTO)
+         */
+        class ReviewApp extends ApiClient {
+            constructor() {
+                super();
+                this.mistakes = [];
+                this.currentPage = 1;
+                this.itemsPerPage = 5; // Lista menor para foco total na revisão
+
+                this.uiList = document.getElementById('lista-erros');
+                this.uiPagination = document.getElementById('controles-paginacao');
+            }
+
+            /**
+             * Inicia a aplicação
+             */
+            async start() {
+                if (!Config.TOKEN) return window.location.href = 'login.html';
+
+                try {
+                    this.uiList.innerHTML = "<p>A carregar registos...</p>";
+                    this.mistakes = await this.fetchMistakes();
+                    this.render();
+                } catch (err) {
+                    this.uiList.innerHTML = "<p style='color:red'>Erro de ligação ao servidor.</p>";
+                }
+            }
+
+            /**
+             * Renderiza a lista baseada na página atual
+             */
+            render() {
+                this.uiList.innerHTML = '';
+
+                if (this.mistakes.length === 0) {
+                    this.uiList.innerHTML = `<div class="mensagem-vazia">🎉 Parabéns! Não tens erros registados.</div>`;
+                    this.uiPagination.innerHTML = '';
+                    return;
+                }
+
+                // Lógica de Paginação (Slice)
+                const start = (this.currentPage - 1) * this.itemsPerPage;
+                const end = start + this.itemsPerPage;
+                const currentItems = this.mistakes.slice(start, end);
+
+                currentItems.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'erro-item';
+                    li.innerHTML = `
+                        <span class="palavra-en">🇬🇧 ${item.english_word}</span>
+                        <span class="palavra-pt">🇵🇹 ${item.portuguese_translation}</span>
+                    `;
+                    this.uiList.appendChild(li);
+                });
+
+                this.renderControls();
+            }
+
+            /**
+             * Renderiza botões Anterior/Próximo
+             */
+            renderControls() {
+                const totalPages = Math.ceil(this.mistakes.length / this.itemsPerPage);
+                
+                this.uiPagination.innerHTML = `
+                    <button class="btn-nav" id="prev" ${this.currentPage === 1 ? 'disabled' : ''}>Anterior</button>
+                    <span><strong>${this.currentPage}</strong> / ${totalPages}</span>
+                    <button class="btn-nav" id="next" ${this.currentPage >= totalPages ? 'disabled' : ''}>Próxima</button>
+                `;
+
+                document.getElementById('prev').onclick = () => {
+                    this.currentPage--;
+                    this.render();
+                };
+
+                document.getElementById('next').onclick = () => {
+                    this.currentPage++;
+                    this.render();
+                };
+            }
+        }
+
+        // Execução
+        const app = new ReviewApp();
+        app.start();
+
+    </script>
+</body>
+</html>

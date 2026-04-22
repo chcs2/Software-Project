@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeekLingo - Modo Treino</title>
+    <style>
+        :root {
+            --cor-primaria: #2980b9;
+            --cor-sucesso: #27ae60;
+            --cor-erro: #e74c3c;
+            --cor-bg: #2c3e50;
+            --cor-dica: #f1c40f;
+            --radius: 12px;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background-color: var(--cor-bg); 
+            color: white; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            text-align: center; 
+        }
+
+        .quiz-box { 
+            background: white; 
+            color: #333; 
+            padding: 40px; 
+            border-radius: var(--radius); 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3); 
+            max-width: 450px; 
+            width: 90%; 
+            position: relative; /* Essencial para posicionar a lâmpada aqui dentro */
+        }
+
+        h2 { margin-top: 0; color: var(--cor-primaria); }
+        h3 { color: #2c3e50; margin-bottom: 20px; }
+        
+        /* ABAS DE MODO (Lobby) */
+        .modos-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; }
+        .btn-modo { 
+            background: #eee; border: none; padding: 10px 18px; border-radius: 20px; 
+            cursor: pointer; font-weight: bold; color: #7f8c8d; transition: 0.3s; 
+        }
+        .btn-modo.ativo { background: #9b59b6; color: white; }
+
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #7f8c8d; text-align: center; }
+        
+        select {
+            width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; 
+            border-radius: 8px; cursor: pointer; outline: none; background: #f9f9f9;
+            color: #2c3e50; font-weight: 500; appearance: none; text-align: center;
+        }
+        select:focus { border-color: var(--cor-primaria); }
+
+        .palavra-destaque { font-size: 42px; font-weight: bold; margin: 25px 0; color: #2c3e50; }
+        
+        /* INPUTS E BOTÕES */
+        input { 
+            width: 100%; padding: 14px; font-size: 16px; margin-bottom: 20px; 
+            border: 2px solid #ddd; border-radius: 8px; text-align: center; box-sizing: border-box;
+        }
+        input:focus { outline: none; border-color: var(--cor-primaria); }
+
+        .btn-acao { 
+            background-color: var(--cor-sucesso); color: white; border: none; 
+            padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; 
+            font-size: 16px; width: 100%; transition: 0.3s; 
+        }
+        .btn-acao:hover { opacity: 0.9; }
+        
+        .btn-primaria { background-color: var(--cor-primaria); margin-top: 10px; }
+
+        .btn-opcao { 
+            background: #f9f9f9; border: 2px solid #ddd; padding: 14px; 
+            border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; 
+            color: #2c3e50; transition: 0.2s; width: 100%; margin-bottom: 8px;
+        }
+        .btn-opcao:hover { background: #e8f4f8; border-color: var(--cor-primaria); }
+
+        .mensagem { margin-top: 20px; font-weight: bold; min-height: 24px; font-size: 15px; }
+        .msg-erro { color: var(--cor-erro); }
+        .msg-sucesso { color: var(--cor-sucesso); }
+        
+        .btn-voltar { display: inline-block; margin-top: 30px; color: #7f8c8d; text-decoration: none; font-size: 14px; font-weight: 500; }
+        .btn-voltar:hover { color: #333; text-decoration: underline; }
+
+        #modo-escrita, #modo-escolha, #tela-jogo { display: none; }
+
+        /* LUZINHA DE DICA */
+        .btn-dica {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 26px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            filter: drop-shadow(0 2px 4px rgba(241, 196, 15, 0.4));
+        }
+        .btn-dica:hover {
+            transform: scale(1.15) rotate(10deg);
+        }
+
+        /* POP-UP DE CONTEXTO (MODAL) */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(3px);
+        }
+        .modal-content {
+            background: white;
+            color: #333;
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 400px;
+            width: 85%;
+            text-align: left;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px; right: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 24px;
+            color: #bdc3c7;
+            transition: 0.2s;
+        }
+        .modal-close:hover { color: var(--cor-erro); }
+        
+        .modal-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--cor-primaria);
+            margin: 0 0 15px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-texto {
+            font-size: 18px;
+            font-style: italic;
+            color: #2c3e50;
+            margin: 0;
+            line-height: 1.5;
+            border-left: 4px solid var(--cor-dica);
+            padding-left: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-box">
+        <h2>🎮 Modo Treino</h2>
+        
+        <div id="tela-lobby">
+            <h3>Preparação</h3>
+            
+            <div class="form-group">
+                <label>O que queres treinar?</label>
+                <select id="select-categoria">
+                    <option value="A carregar...">A carregar categorias...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Modo de Jogo:</label>
+                <div class="modos-container">
+                    <button class="btn-modo ativo" id="tab-escolha">Múltipla Escolha</button>
+                    <button class="btn-modo" id="tab-escrita">Escrita</button>
+                </div>
+            </div>
+
+            <button class="btn-acao btn-primaria" id="btn-iniciar-jogo" disabled>A carregar palavras...</button>
+        </div>
+
+        <div id="tela-jogo">
+            <button class="btn-dica" id="btn-dica" title="Ver exemplo em inglês">💡</button>
+
+            <p id="instrucao">Como se traduz esta palavra?</p>
+            
+            <div id="area-jogo">
+                <div class="palavra-destaque" id="palavra-alvo">...</div>
+                
+                <div id="modo-escolha" style="display: flex; flex-direction: column;"></div>
+
+                <div id="modo-escrita">
+                    <input type="text" id="input-resposta" placeholder="Escreve aqui...">
+                    <button class="btn-acao" id="btn-verificar">Verificar</button>
+                </div>
+                
+                <div class="mensagem" id="status-msg"></div>
+            </div>
+        </div>
+
+        <a href="dashboard.html" class="btn-voltar">⬅ Voltar ao Painel</a>
+    </div>
+
+    <div class="modal-overlay" id="modal-dica">
+        <div class="modal-content">
+            <span class="modal-close" id="fechar-dica">&times;</span>
+            <p class="modal-title">💡 Context Example</p>
+            <p class="modal-texto" id="texto-dica">...</p>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * CLASSE ESTÁTICA: CONFIGURAÇÕES
+         */
+        class Config {
+            static API_URL = "http://127.0.0.1:8000";
+            static get TOKEN() { return localStorage.getItem('token'); }
+        }
+
+        /**
+         * CLASSE BASE: API CLIENT
+         */
+        class ApiClient {
+            async request(path, method = 'GET', body = null) {
+                const options = {
+                    method,
+                    headers: {
+                        'Authorization': `Bearer ${Config.TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                };
+                if (body) options.body = JSON.stringify(body);
+
+                const res = await fetch(`${Config.API_URL}${path}`, options);
+                if (res.status === 401) window.location.href = 'login.html';
+                return res;
+            }
+        }
+
+        /**
+         * CLASSE PRINCIPAL: QUIZ APP
+         */
+        class QuizApp extends ApiClient {
+            constructor() {
+                super();
+                // Estado do Jogo
+                this.wordsToLearnRaw = []; 
+                this.wordsToLearn = [];    
+                this.allWordsPool = [];
+                this.currentWord = null;
+                this.currentMode = 'escolha'; 
+                
+                this.initElements();
+                this.initEvents();
+            }
+
+            initElements() {
+                // UI do Lobby
+                this.uiTelaLobby = document.getElementById('tela-lobby');
+                this.uiSelectCategoria = document.getElementById('select-categoria');
+                this.uiBtnIniciar = document.getElementById('btn-iniciar-jogo');
+                
+                // UI do Jogo
+                this.uiTelaJogo = document.getElementById('tela-jogo');
+                this.uiPalavra = document.getElementById('palavra-alvo');
+                this.uiMsg = document.getElementById('status-msg');
+                this.uiInputEscrita = document.getElementById('input-resposta');
+                this.uiAreaEscolha = document.getElementById('modo-escolha');
+                this.uiAreaEscrita = document.getElementById('modo-escrita');
+
+                // UI da Dica / Contexto
+                this.uiBtnDica = document.getElementById('btn-dica');
+                this.uiModalDica = document.getElementById('modal-dica');
+                this.uiTextoDica = document.getElementById('texto-dica');
+                this.uiFecharDica = document.getElementById('fechar-dica');
+            }
+
+            initEvents() {
+                // Alternância de Modos no Lobby
+                document.getElementById('tab-escolha').onclick = () => this.switchMode('escolha');
+                document.getElementById('tab-escrita').onclick = () => this.switchMode('escrita');
+
+                // Iniciar Jogo
+                this.uiBtnIniciar.onclick = () => this.startPlaying();
+
+                // Verificação na Escrita
+                document.getElementById('btn-verificar').onclick = () => this.checkWritingAnswer();
+                this.uiInputEscrita.onkeypress = (e) => { if (e.key === 'Enter') this.checkWritingAnswer(); };
+
+                // Eventos da Dica / Modal
+                this.uiBtnDica.onclick = () => this.showDica();
+                this.uiFecharDica.onclick = () => this.hideDica();
+                // Fechar modal clicando fora do quadro branco
+                this.uiModalDica.addEventListener('click', (e) => {
+                    if (e.target === this.uiModalDica) this.hideDica();
+                });
+            }
+
+            async start() {
+                try {
+                    const [resQuiz, resAll] = await Promise.all([
+                        this.request('/words/quiz'),
+                        this.request('/words/')
+                    ]);
+
+                    if (resQuiz.ok && resAll.ok) {
+                        this.wordsToLearnRaw = await resQuiz.json();
+                        this.allWordsPool = await resAll.json();
+                        
+                        this.populateCategories();
+                    }
+                } catch (err) {
+                    this.uiBtnIniciar.innerText = "Erro ao carregar";
+                    console.error("Erro de ligação ao servidor:", err);
+                }
+            }
+
+            populateCategories() {
+                const categoriasSet = new Set(
+                    this.wordsToLearnRaw.map(w => w.category || w.categoria || "Sem Categoria")
+                );
+                
+                const categorias = ["Todas", ...Array.from(categoriasSet)];
+                
+                this.uiSelectCategoria.innerHTML = "";
+                categorias.forEach(cat => {
+                    const option = document.createElement("option");
+                    option.value = cat;
+                    option.innerText = cat;
+                    this.uiSelectCategoria.appendChild(option);
+                });
+
+                this.uiBtnIniciar.innerText = "Começar Treino 🚀";
+                this.uiBtnIniciar.disabled = false;
+            }
+
+            switchMode(mode) {
+                this.currentMode = mode;
+                document.getElementById('tab-escolha').classList.toggle('ativo', mode === 'escolha');
+                document.getElementById('tab-escrita').classList.toggle('ativo', mode === 'escrita');
+            }
+
+            startPlaying() {
+                const categoriaSelecionada = this.uiSelectCategoria.value;
+
+                if (categoriaSelecionada === "Todas") {
+                    this.wordsToLearn = [...this.wordsToLearnRaw];
+                } else {
+                    this.wordsToLearn = this.wordsToLearnRaw.filter(
+                        w => (w.category || w.categoria || "Sem Categoria") === categoriaSelecionada
+                    );
+                }
+
+                if (this.wordsToLearn.length === 0) {
+                    alert("Não tens palavras para treinar nesta categoria hoje!");
+                    return;
+                }
+
+                this.uiTelaLobby.style.display = "none";
+                this.uiTelaJogo.style.display = "block";
+                
+                this.uiAreaEscolha.style.display = (this.currentMode === 'escolha') ? 'flex' : 'none';
+                this.uiAreaEscrita.style.display = (this.currentMode === 'escrita') ? 'block' : 'none';
+
+                this.nextQuestion();
+            }
+
+            nextQuestion() {
+                if (this.wordsToLearn.length === 0) {
+                    document.getElementById('tela-jogo').innerHTML = "<h3>🎉 Incrível!</h3><p>Concluíste todas as palavras desta sessão.</p>";
+                    return;
+                }
+
+                const index = Math.floor(Math.random() * this.wordsToLearn.length);
+                this.currentWord = this.wordsToLearn[index];
+                
+                this.showStatus("", "");
+                this.renderQuestion();
+            }
+
+            renderQuestion() {
+                this.uiPalavra.innerText = this.currentWord.english_word;
+                
+                if (this.currentMode === 'escrita') {
+                    this.uiInputEscrita.value = "";
+                    this.uiInputEscrita.focus();
+                } else {
+                    this.generateChoiceButtons();
+                }
+            }
+
+            generateChoiceButtons() {
+                this.uiAreaEscolha.innerHTML = "";
+                
+                let options = [this.currentWord.portuguese_translation];
+                const distractors = this.allWordsPool
+                    .filter(w => w.id !== this.currentWord.id)
+                    .sort(() => 0.5 - Math.random())
+                    .slice(0, 3)
+                    .map(w => w.portuguese_translation);
+                
+                options = [...options, ...distractors].sort(() => 0.5 - Math.random());
+
+                options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-opcao';
+                    btn.innerText = opt;
+                    btn.onclick = () => this.validateAnswer(opt);
+                    this.uiAreaEscolha.appendChild(btn);
+                });
+            }
+
+            checkWritingAnswer() {
+                const answer = this.uiInputEscrita.value.trim();
+                if (!answer) return;
+                this.validateAnswer(answer);
+            }
+
+            async validateAnswer(userAnswer) {
+                const isCorrect = userAnswer.toLowerCase() === this.currentWord.portuguese_translation.toLowerCase();
+
+                if (isCorrect) {
+                    this.showStatus("✅ Correto! A guardar...", "sucesso");
+                    await this.submitProgress(this.currentWord.id);
+                    
+                    this.wordsToLearn = this.wordsToLearn.filter(w => w.id !== this.currentWord.id);
+                    setTimeout(() => this.nextQuestion(), 1200);
+                } else {
+                    this.showStatus(`❌ Errado! Era: ${this.currentWord.portuguese_translation}`, "erro");
+                    await this.submitMistake(this.currentWord.id);
+                    
+                    setTimeout(() => this.nextQuestion(), 2000);
+                }
+            }
+
+            // --- FUNÇÕES DA DICA DE CONTEXTO ---
+            
+            showDica() {
+                // Procura a frase na API. Se não existir no JSON, cria uma frase genérica para evitar quebras.
+                const frase = this.currentWord.example || this.currentWord.exemplo || `Did you know that the word "${this.currentWord.english_word}" is very common in daily conversations?`;
+                
+                this.uiTextoDica.innerText = `"${frase}"`;
+                this.uiModalDica.style.display = 'flex';
+            }
+
+            hideDica() {
+                this.uiModalDica.style.display = 'none';
+            }
+
+            // --- MÉTODOS DE API (Sincronização) ---
+
+            async submitProgress(wordId) {
+                await this.request('/progress/', 'POST', { word_id: wordId });
+            }
+
+            async submitMistake(wordId) {
+                await this.request('/mistakes/', 'POST', { word_id: wordId });
+            }
+
+            showStatus(text, type) {
+                this.uiMsg.innerText = text;
+                this.uiMsg.className = "mensagem " + (type === "erro" ? "msg-erro" : "msg-sucesso");
+            }
+        }
+
+        // Iniciar a aplicação
+        const game = new QuizApp();
+        game.start();
+    </script>
+</body>
+</html>
